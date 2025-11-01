@@ -1,18 +1,121 @@
-# VMware VM Snapshot Removal Script
-# This script connects to a vCenter server and removes snapshots created by the snapshot.ps1 script
-# that were created for server patching by LVS
+<#
+.SYNOPSIS
+    Removes VMware snapshots created for server patching operations.
 
-# Connect to the vCenter server
-Connect-VIServer -Server "192.168.2.133" -User "administrator@vsphere.local" -Password "#*"
-#Connect-VIServer -Server "192.168.0.171" -User "root" -Password "#*"
+.DESCRIPTION
+    This script connects to a vCenter server and removes snapshots that match specific criteria.
+    By default, it removes snapshots with descriptions containing "by LVS for server patching".
+    VM names are read from a text file (one per line).
 
-# Path to the text file containing VM names
-$vmListPath = "C:\temp\vm_list.txt"
+    The script provides:
+    - Safety confirmation before removal
+    - Detailed progress reporting
+    - Summary statistics
+    - Error handling and logging
+
+.PARAMETER Server
+    vCenter Server or ESXi host IP address or FQDN (default: 192.168.2.133)
+
+.PARAMETER Credential
+    PSCredential object for authentication. If not provided, will prompt for credentials.
+
+.PARAMETER VMListPath
+    Path to text file containing VM names (one per line). Default: C:\temp\vm_list.txt
+
+.PARAMETER SnapshotFilter
+    Filter string for snapshot descriptions (default: "*by LVS for server patching*")
+
+.PARAMETER WhatIf
+    Shows what would be removed without actually removing snapshots.
+
+.EXAMPLE
+    .\remove_snapshots.ps1
+
+    Removes matching snapshots from VMs listed in C:\temp\vm_list.txt
+
+.EXAMPLE
+    .\remove_snapshots.ps1 -WhatIf
+
+    Preview which snapshots would be removed without actually removing them.
+
+.EXAMPLE
+    .\remove_snapshots.ps1 -Server "vcenter.company.com" -VMListPath "D:\patching\servers.txt"
+
+    Uses custom server and VM list path.
+
+.EXAMPLE
+    $cred = Get-Credential
+    .\remove_snapshots.ps1 -Server "192.168.0.171" -Credential $cred -SnapshotFilter "*pre-patch*"
+
+    Uses custom credentials and removes snapshots matching different description.
+
+.NOTES
+    Author: LVS
+    Modified: 2025-10-28
+    Requires: VMware PowerCLI module
+    Version: 2.0
+
+    WARNING: Snapshot removal is irreversible. Always verify you're removing the correct snapshots.
+#>
+
+[CmdletBinding(SupportsShouldProcess = $true)]
+param(
+    [Parameter(Mandatory = $false)]
+    [string]$Server = "192.168.2.133",
+
+    [Parameter(Mandatory = $false)]
+    [System.Management.Automation.PSCredential]$Credential,
+
+    [Parameter(Mandatory = $false)]
+    [string]$VMListPath = "C:\temp\vm_list.txt",
+
+    [Parameter(Mandatory = $false)]
+    [string]$SnapshotFilter = "*by LVS for server patching*"
+)
+
+#region Main Script
+
+Write-Host "`n=== VMware Snapshot Removal Script ===" -ForegroundColor Cyan
+Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Cyan
+
+# Connect to vCenter if not already connected
+$needsConnection = $true
+if ($global:DefaultVIServer -and $global:DefaultVIServer.IsConnected) {
+    Write-Host "`nUsing existing connection to: $($global:DefaultVIServer.Name)" -ForegroundColor Green
+    $needsConnection = $false
+}
+
+if ($needsConnection) {
+    try {
+        if (-not $Credential) {
+            Write-Host "`nEnter credentials for $Server" -ForegroundColor Cyan
+            $Credential = Get-Credential -Message "Enter credentials for $Server"
+        }
+
+        Write-Host "Connecting to vCenter Server: $Server" -ForegroundColor Cyan
+        Connect-VIServer -Server $Server -Credential $Credential -ErrorAction Stop | Out-Null
+        Write-Host "Successfully connected to $Server" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "ERROR: Failed to connect to $Server : $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
+}
+
+# Check if VM list file exists
+if (-not (Test-Path $VMListPath)) {
+    Write-Host "`nERROR: VM list file not found: $VMListPath" -ForegroundColor Red
+    Write-Host "Please create this file with one VM name per line." -ForegroundColor Yellow
+    if ($needsConnection) {
+        Disconnect-VIServer -Server * -Confirm:$false -ErrorAction SilentlyContinue
+    }
+    exit 1
+}
 
 # Check if the file exists
-if (Test-Path $vmListPath) {
+if (Test-Path $VMListPath) {
     # Read VM names from the text file
-    $vmNames = Get-Content -Path $vmListPath
+    $vmNames = Get-Content -Path $VMListPath | Where-Object { $_.Trim() -ne "" }
     
     # Track statistics
     $successCount = 0
@@ -29,9 +132,9 @@ if (Test-Path $vmListPath) {
         $vm = Get-VM -Name $vmName -ErrorAction SilentlyContinue
         
         if ($vm) {
-            # Get all snapshots for this VM
-            $snapshots = Get-Snapshot -VM $vm -ErrorAction SilentlyContinue | 
-                         Where-Object { $_.Description -like "*by LVS for server patching*" }
+            # Get all snapshots for this VM matching the filter
+            $snapshots = Get-Snapshot -VM $vm -ErrorAction SilentlyContinue |
+                         Where-Object { $_.Description -like $SnapshotFilter }
             
             if ($snapshots) {
                 $snapshotCount = ($snapshots | Measure-Object).Count
@@ -68,11 +171,15 @@ if (Test-Path $vmListPath) {
     Write-Host "Failed to remove: $failCount snapshot(s)" -ForegroundColor Red
     Write-Host "VMs with no matching snapshots: $noSnapshotCount" -ForegroundColor Gray
     
-} else {
-    Write-Host "The file $vmListPath does not exist." -ForegroundColor Red
-    Write-Host "Please create this file with a list of VM names before running this script." -ForegroundColor Yellow
 }
 
-# Disconnect from the vCenter server
-Disconnect-VIServer -Server "192.168.2.133" -Confirm:$false -ErrorAction SilentlyContinue
-Write-Host "Disconnected from vCenter server." -ForegroundColor Cyan
+Write-Host "`n=== Operation Complete ===" -ForegroundColor Cyan
+Write-Host "Completed at: $(Get-Date)" -ForegroundColor Cyan
+
+# Disconnect if we connected in this script
+if ($needsConnection) {
+    Disconnect-VIServer -Server * -Confirm:$false -ErrorAction SilentlyContinue
+    Write-Host "Disconnected from vCenter server" -ForegroundColor Cyan
+}
+
+#endregion

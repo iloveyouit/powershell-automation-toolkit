@@ -1,9 +1,10 @@
 
 <#
 .SYNOPSIS
-    This script gathers basic inventory information for all virtual machines in a vCenter Server.
+    Gathers basic inventory information for all virtual machines in a vCenter Server.
+
 .DESCRIPTION
-    The script connects to a vCenter Server, retrieves a list of all VMs, and for each VM, it collects the following information:
+    This script connects to a vCenter Server, retrieves a list of all VMs, and collects comprehensive information:
     - VM Name
     - Power State
     - CPU Count
@@ -12,13 +13,36 @@
     - IP Address
     - VMware Tools Version
     - VMware Tools Status
-    The collected data is then exported to a CSV file.
+
+    The collected data is exported to a timestamped CSV file for record-keeping and analysis.
+
 .PARAMETER vCenterServer
-    The FQDN or IP address of the vCenter Server.
+    The FQDN or IP address of the vCenter Server to connect to.
+
 .PARAMETER Credential
-    Specifies a user account that has permission to perform this action.
+    PSCredential object for authentication. If not provided, will prompt for credentials.
+
 .EXAMPLE
-    .C:\Get-VMwareInventory.ps1 -vCenterServer vc01.example.com
+    .\Get-VMwareInventory.ps1 -vCenterServer "vc01.example.com"
+
+    Connects to vCenter server and exports VM inventory to CSV with current date.
+
+.EXAMPLE
+    $cred = Get-Credential
+    .\Get-VMwareInventory.ps1 -vCenterServer "192.168.0.171" -Credential $cred
+
+    Uses pre-defined credentials to connect and gather inventory.
+
+.EXAMPLE
+    .\Get-VMwareInventory.ps1 -vCenterServer "vcenter.company.com"
+
+    Standard inventory collection with prompting for credentials.
+
+.NOTES
+    Author: System Administrator
+    Date: 2025-10-28
+    Requires: VMware PowerCLI module
+    Version: 1.1
 #>
 param (
     [string]$vCenterServer,

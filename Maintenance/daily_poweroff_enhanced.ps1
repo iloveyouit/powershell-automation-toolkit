@@ -27,6 +27,27 @@
 .PARAMETER GracefulTimeout
     Timeout in seconds for graceful shutdown (default: 120)
 
+.EXAMPLE
+    .\daily_poweroff_enhanced.ps1
+
+    Powers off VMs using default settings (192.168.0.171, root user).
+    Prompts interactively for vCenter password and maintenance mode option.
+
+.EXAMPLE
+    .\daily_poweroff_enhanced.ps1 -vCenterServer "vcenter.company.com" -vCenterUser "administrator@vsphere.local"
+
+    Powers off VMs on a specific vCenter Server with custom username.
+
+.EXAMPLE
+    .\daily_poweroff_enhanced.ps1 -EnableMaintenanceMode -ESXiHost "esxi01.company.com" -GracefulTimeout 180
+
+    Powers off VMs with 180-second graceful timeout, then automatically enters maintenance mode on specified host.
+
+.EXAMPLE
+    .\daily_poweroff_enhanced.ps1 -GracefulTimeout 60
+
+    Powers off VMs with a shorter 60-second graceful shutdown timeout.
+
 .NOTES
     Author: System Administrator
     Date: 2025-10-28

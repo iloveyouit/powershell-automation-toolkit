@@ -1,6 +1,43 @@
-# VMware Data Collection Modules
-# This file contains additional data collection functions for the main inventory script
-# Improved for performance and modularity.
+<#
+.SYNOPSIS
+    VMware Data Collection Modules - Comprehensive inventory functions
+
+.DESCRIPTION
+    This module contains specialized data collection functions for VMware infrastructure inventory.
+    Functions are optimized for performance and modularity.
+
+    Available Functions:
+    - Collect-HostInformation: Gathers detailed ESXi host information
+    - Collect-VMInformation: Collects comprehensive VM data
+    - Collect-DatastoreInformation: Retrieves datastore capacity and usage
+    - Collect-SnapshotInformation: Identifies and reports on VM snapshots
+    - Collect-NetworkInformation: Collects network configuration data
+    - Collect-ResourcePoolInformation: Gathers resource pool settings
+
+.EXAMPLE
+    Import-Module .\VMware-DataCollection-Modules.ps1
+    $inventoryData = @{}
+    Collect-HostInformation -inventoryData $inventoryData
+
+.EXAMPLE
+    # Collect all inventory data
+    $inventoryData = [ordered]@{
+        Hosts = @()
+        VMs = @()
+        Datastores = @()
+    }
+    Collect-HostInformation -inventoryData $inventoryData
+    Collect-VMInformation -inventoryData $inventoryData
+    Collect-DatastoreInformation -inventoryData $inventoryData
+
+.NOTES
+    Author: System Administrator
+    Date: 2025-10-28
+    Requires: VMware PowerCLI module
+    Version: 2.1
+
+    This module is designed to be imported by VMware-DeepDive-Inventory.ps1
+#>
 
 #region Collect Host Information
 function Collect-HostInformation {

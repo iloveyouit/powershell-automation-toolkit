@@ -19,6 +19,29 @@
     ESXi host to check for maintenance mode (optional)
     If not specified, will check all connected hosts
     
+.EXAMPLE
+    .\daily_poweron_enhanced.ps1
+
+    Powers on VMs using default settings (192.168.0.171, root user).
+    Checks for maintenance mode and prompts interactively if detected.
+
+.EXAMPLE
+    .\daily_poweron_enhanced.ps1 -vCenterServer "vcenter.company.com" -vCenterUser "administrator@vsphere.local"
+
+    Powers on VMs on a specific vCenter Server with custom username.
+
+.EXAMPLE
+    .\daily_poweron_enhanced.ps1 -ESXiHost "esxi01.company.com"
+
+    Powers on VMs and checks maintenance mode status only for the specified host.
+
+.EXAMPLE
+    $cred = Get-Credential
+    Connect-VIServer -Server "192.168.0.171" -Credential $cred
+    .\daily_poweron_enhanced.ps1
+
+    Uses an existing vCenter connection to power on VMs (will not prompt for credentials).
+
 .NOTES
     Author: System Administrator
     Date: 2025-10-27

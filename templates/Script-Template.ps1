@@ -16,13 +16,29 @@
 
 .EXAMPLE
     .\Script-Template.ps1 -ParameterName "Value"
-    
-    Description of what this example does.
+
+    Basic usage with minimal parameters. Uses default values for optional parameters.
 
 .EXAMPLE
-    .\Script-Template.ps1 -ParameterName "Value" -AnotherParameter "Value2" -Verbose
-    
-    Description of this more complex example.
+    .\Script-Template.ps1 -ParameterName "Value" -AnotherParameter "Option2" -Verbose
+
+    Runs script with verbose output enabled, showing detailed progress information.
+
+.EXAMPLE
+    .\Script-Template.ps1 -ParameterName "Value" -DryRun
+
+    Runs in dry-run mode to preview changes without making actual modifications.
+
+.EXAMPLE
+    $cred = Get-Credential
+    .\Script-Template.ps1 -ParameterName "Value" -Credential $cred -LogPath "D:\Logs"
+
+    Uses custom credentials and log path for execution.
+
+.EXAMPLE
+    Get-Content "servers.txt" | .\Script-Template.ps1 -AnotherParameter "Option1"
+
+    Processes multiple items from pipeline input (file contains one item per line).
 
 .NOTES
     FileName:    Script-Template.ps1

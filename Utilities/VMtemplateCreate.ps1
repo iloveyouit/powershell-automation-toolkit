@@ -1,24 +1,112 @@
-# Script parameters
+<#
+.SYNOPSIS
+    Creates a new VMware VM template from an ISO image.
+
+.DESCRIPTION
+    This script automates the creation of VMware VM templates by:
+    - Creating a new VM with specified hardware configuration
+    - Mounting an ISO for OS installation
+    - Installing VMware Tools
+    - Converting the VM to a template
+
+    The script requires an active connection to vCenter/ESXi (use Connect-VIServer first).
+
+.PARAMETER TemplateName
+    Name for the new template (must be unique)
+
+.PARAMETER Datastore
+    Datastore where the template will be stored
+
+.PARAMETER VMHost
+    ESXi host where the template will be created
+
+.PARAMETER GuestCredential
+    Credentials for the guest OS (required for VMware Tools installation)
+
+.PARAMETER Network
+    Network to connect to (default: "VM Network")
+
+.PARAMETER ISOFileName
+    Name of the ISO file in the datastore (default: "en_windows_server_2019.iso")
+
+.PARAMETER ISOFolderName
+    Folder name in datastore containing ISOs (default: "ISOs")
+
+.PARAMETER VMGuestOS
+    Guest OS identifier for VMware (default: "windows9Server64Guest")
+
+.PARAMETER NumCPU
+    Number of virtual CPUs (default: 2)
+
+.PARAMETER MemoryGB
+    Memory in GB (default: 4)
+
+.PARAMETER BootWaitTime
+    Time to wait for boot and VMware Tools (default: 180 seconds)
+
+.EXAMPLE
+    Connect-VIServer -Server "192.168.0.171"
+    $guestCred = Get-Credential -Message "Enter guest OS credentials"
+    .\VMtemplateCreate.ps1 -TemplateName "Win2019-Template" -Datastore "datastore1" -VMHost "esxi01.company.com" -GuestCredential $guestCred
+
+    Creates a Windows Server 2019 template with default settings.
+
+.EXAMPLE
+    $guestCred = Get-Credential
+    .\VMtemplateCreate.ps1 -TemplateName "Ubuntu-20.04-Template" -Datastore "SSD-Datastore" -VMHost "192.168.0.171" -GuestCredential $guestCred -ISOFileName "ubuntu-20.04-server.iso" -VMGuestOS "ubuntu64Guest" -NumCPU 4 -MemoryGB 8
+
+    Creates an Ubuntu template with custom CPU/memory configuration.
+
+.EXAMPLE
+    .\VMtemplateCreate.ps1 -TemplateName "Win2022-Template" -Datastore "datastore1" -VMHost "esxi01" -GuestCredential $cred -Network "Production-VLAN10" -BootWaitTime 300
+
+    Creates template on specific network with extended boot wait time.
+
+.NOTES
+    Author: System Administrator
+    Date: 2025-10-28
+    Requires: VMware PowerCLI module and active vCenter connection
+    Version: 2.0
+
+    Prerequisites:
+    - ISO file must be uploaded to specified datastore folder
+    - Sufficient datastore space for VM creation
+    - Valid guest OS credentials for VMware Tools installation
+#>
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$TemplateName,
-    
+
     [Parameter(Mandatory = $true)]
     [string]$Datastore,
-    
+
     [Parameter(Mandatory = $true)]
     [string]$VMHost,
-    
+
     [Parameter(Mandatory = $true)]
     [PSCredential]$GuestCredential,
-    
+
+    [Parameter(Mandatory = $false)]
     [string]$Network = "VM Network",
+
+    [Parameter(Mandatory = $false)]
     [string]$ISOFileName = "en_windows_server_2019.iso",
+
+    [Parameter(Mandatory = $false)]
     [string]$ISOFolderName = "ISOs",
+
+    [Parameter(Mandatory = $false)]
     [string]$VMGuestOS = "windows9Server64Guest",
+
+    [Parameter(Mandatory = $false)]
     [int]$NumCPU = 2,
+
+    [Parameter(Mandatory = $false)]
     [int]$MemoryGB = 4,
+
+    [Parameter(Mandatory = $false)]
     [int]$BootWaitTime = 180
 )
 
