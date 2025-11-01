@@ -1,0 +1,80 @@
+name: PowerShell Script Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    name: Run PSScriptAnalyzer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: powershell
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+
+      - name: Run PSScriptAnalyzer
+        shell: powershell
+        run: |
+          Write-Host "Running PSScriptAnalyzer on all PowerShell files..." -ForegroundColor Cyan
+
+          # Find all .ps1 files
+          $scriptFiles = Get-ChildItem -Path . -Include "*.ps1" -Recurse | Where-Object {
+            $_.FullName -notmatch '[\\/]\.git[\\/]'
+          }
+
+          if ($scriptFiles.Count -eq 0) {
+            Write-Host "No PowerShell scripts found to analyze." -ForegroundColor Yellow
+            exit 0
+          }
+
+          Write-Host "Found $($scriptFiles.Count) PowerShell script(s) to analyze." -ForegroundColor Green
+
+          # Run analysis
+          $results = $scriptFiles | ForEach-Object {
+            Write-Host "`nAnalyzing: $($_.Name)" -ForegroundColor Cyan
+            Invoke-ScriptAnalyzer -Path $_.FullName -Settings PSGallery
+          }
+
+          # Display results
+          if ($results) {
+            Write-Host "`n========================================" -ForegroundColor Red
+            Write-Host "PSScriptAnalyzer found issues:" -ForegroundColor Red
+            Write-Host "========================================" -ForegroundColor Red
+            $results | Format-Table -AutoSize -Property Severity, Line, RuleName, Message, ScriptName
+
+            $errorCount = ($results | Where-Object { $_.Severity -eq 'Error' }).Count
+            $warningCount = ($results | Where-Object { $_.Severity -eq 'Warning' }).Count
+            $infoCount = ($results | Where-Object { $_.Severity -eq 'Information' }).Count
+
+            Write-Host "`nSummary:" -ForegroundColor Yellow
+            Write-Host "  Errors: $errorCount" -ForegroundColor Red
+            Write-Host "  Warnings: $warningCount" -ForegroundColor Yellow
+            Write-Host "  Information: $infoCount" -ForegroundColor Cyan
+
+            if ($errorCount -gt 0) {
+              Write-Error "PSScriptAnalyzer found $errorCount error(s). Please fix before merging."
+              exit 1
+            }
+          } else {
+            Write-Host "`n========================================" -ForegroundColor Green
+            Write-Host "PSScriptAnalyzer: All checks passed!" -ForegroundColor Green
+            Write-Host "========================================" -ForegroundColor Green
+          }
+
+      - name: Upload analysis results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: pscriptanalyzer-results
+          path: |
+            **/*.ps1
+          retention-days: 30

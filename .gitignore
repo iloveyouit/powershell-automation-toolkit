@@ -1,0 +1,74 @@
+# PowerShell Automation Toolkit - .gitignore
+
+# Log files
+*.log
+logs/
+*.tmp
+
+# Credential files - NEVER commit these
+*credential*.xml
+*password*.txt
+*secret*.txt
+*.pfx
+*.p12
+
+# Configuration files with sensitive data
+config/*-prod.json
+config/*-production.json
+*-secrets.json
+
+# Environment-specific configs (keep templates only)
+*.local.ps1
+*.env
+
+# PowerShell module cache
+PSGetModuleInfo.xml
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Windows thumbnail cache
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Test results and coverage
+TestResults/
+coverage/
+*.trx
+
+# Build artifacts
+build/
+dist/
+*.zip
+*.7z
+
+# IDE and editor files
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Custom exclusions
+# Add your environment-specific files here
